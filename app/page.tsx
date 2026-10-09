@@ -1,18 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { TIERS, tierForHours, type TierId } from "@/lib/tiers";
+import { useEffect, useRef, useState } from "react";
+import { TIERS, tierForHours } from "@/lib/tiers";
 import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
 
-interface CoachResult {
-  tier: TierId;
-  label: string;
-  emoji: string;
-  roast: string;
-  mission: string;
-  preferences: MissionPreferences;
-}
+import { MISSION_KEY, readMission, startMission, finishMission, type CoachResult, type SavedMission } from "@/lib/mission";
 
 const STREAK_KEY = "tgc-streak";
 
@@ -24,20 +17,44 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [touchedToday, setTouchedToday] = useState(false);
+  const [lastDay, setLastDay] = useState("");
+  const [savedMission, setSavedMission] = useState<SavedMission | null>(null);
+  const [ready, setReady] = useState(false);
+  const missionHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
+    function restore() {
     try {
+      const saved = readMission(localStorage);
+      setSavedMission(saved);
       const raw = localStorage.getItem(STREAK_KEY);
-      if (raw) {
-        const { count, last } = JSON.parse(raw);
+      if (saved || raw) {
+        const { count, last } = saved?.progress ?? JSON.parse(raw!);
         const today = new Date().toDateString();
-        setStreak(count ?? 0);
+        setStreak(Number.isSafeInteger(count) && count >= 0 ? count : 0);
+        setLastDay(typeof last === "string" ? last : "");
         setTouchedToday(last === today);
+      } else {
+        setStreak(0);
+        setLastDay("");
+        setTouchedToday(false);
       }
     } catch {
-      /* fresh start */
+      setError("Browser storage is unavailable. Enable it to save a mission before heading outside.");
     }
+    setReady(true);
+    }
+    restore();
+    function sync(event: StorageEvent) {
+      if (event.key === MISSION_KEY || event.key === null) restore();
+    }
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
   }, []);
+
+  useEffect(() => {
+    if (savedMission?.status === "active") missionHeading.current?.focus();
+  }, [savedMission?.id, savedMission?.status]);
 
   const preview = tierForHours(hours);
 
@@ -61,17 +78,51 @@ export default function Home() {
     }
   }
 
-  function touchGrass() {
-    const today = new Date().toDateString();
-    const next = touchedToday ? streak : streak + 1;
-    setStreak(next);
-    setTouchedToday(true);
+  function headOutside() {
+    if (!result) return;
     try {
-      localStorage.setItem(STREAK_KEY, JSON.stringify({ count: next, last: today }));
+      setSavedMission(startMission(localStorage, result, { count: streak, last: lastDay }));
+      setError(null);
     } catch {
-      /* ignore */
+      setError("We couldn't save your mission. Enable browser storage and try again before closing the app.");
     }
   }
+
+  function finish(status: "completed" | "abandoned") {
+    if (!savedMission) return;
+    try {
+      const saved = finishMission(localStorage, savedMission.id, status);
+      setSavedMission(saved);
+      if (saved) {
+        setStreak(saved.progress.count);
+        setLastDay(saved.progress.last);
+        setTouchedToday(saved.progress.last === new Date().toDateString());
+      }
+      setResult(null);
+      setError(null);
+    } catch {
+      setError("We couldn't save that change. Your mission is still active; please try again.");
+    }
+  }
+
+  if (!ready) return <main className="page"><p role="status">Checking your garden…</p></main>;
+
+  if (savedMission?.status === "active") return (
+    <main className="page outside-page">
+      <p className="kicker">Your outdoor mission</p>
+      <h1 ref={missionHeading} tabIndex={-1}>Pocket your phone.<br />Go find a little green.</h1>
+      <GardenMascot tier={savedMission.result.tier} size={160} paused />
+      <section className="card active-mission" aria-label="Active mission">
+        <p className="mission-label">{savedMission.result.preferences.minutes} minutes max · {savedMission.result.preferences.movement === "nearby" ? "Stay nearby" : "Take a walk"}</p>
+        <p className="active-mission__text">{savedMission.result.mission}</p>
+        <p className="outside-reassurance">{MASCOT_NAMES[savedMission.result.tier]} says: “I'll be here. Go.”</p>
+      </section>
+      <p className="saved-note">Mission saved on this device. You can close the app and come back when you're done.</p>
+      {error && <p className="error" role="alert">{error}</p>}
+      <button onClick={() => finish("completed")} className="cta secondary">I'm back — mission complete</button>
+      <button onClick={() => finish("abandoned")} className="abandon-mission">Abandon this mission</button>
+    </main>
+  );
 
   return (
     <main className="page">
@@ -84,6 +135,9 @@ export default function Home() {
           Log your screen time. Get roasted by Gemma. Then go outside and prove it wrong.
         </p>
       </header>
+
+      {savedMission?.status === "completed" && <p className="mission-outcome" role="status">Grass touched. Welcome back!{touchedToday ? " Today's progress is saved." : " Ready for a new day?"}</p>}
+      {savedMission?.status === "abandoned" && <p className="mission-outcome" role="status">Mission set aside. Pick something that fits your day.</p>}
 
       <section className="card">
         <div style={{ textAlign: "center" }}><GardenMascot tier={preview.id} /></div>
@@ -130,7 +184,7 @@ export default function Home() {
         </button>
       </section>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
 
       <div aria-live="polite" aria-atomic="true">
       {result && (
@@ -147,9 +201,7 @@ export default function Home() {
             <p className="mission-summary">{result.preferences.minutes} min max · {result.preferences.movement === "nearby" ? "Stay nearby" : "Take a walk"} · {result.preferences.tone === "gentle" ? "Gentle" : "Spicy"}</p>
             <p>{result.mission}</p>
           </div>
-          <button onClick={touchGrass} disabled={touchedToday} className="cta secondary">
-            {touchedToday ? "Grass touched. See you tomorrow." : "I touched grass"}
-          </button>
+          <button onClick={headOutside} className="cta secondary">Let's go outside</button>
         </section>
       )}
       </div>

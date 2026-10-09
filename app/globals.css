@@ -231,6 +231,16 @@ body {
   margin-top: 1rem;
 }
 
+.outside-page { text-align: center; padding-top: 3rem; }
+.outside-page h1 { font-size: clamp(2rem, 6vw, 2.8rem); letter-spacing: -.04em; line-height: 1.1; margin: .75rem 0; }
+.outside-page h1:focus { outline: none; }
+.active-mission { background: var(--paper); text-align: left; }
+.active-mission__text { font-size: 1.4rem; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.outside-reassurance { color: var(--grass-deep); margin-bottom: 0; }
+.saved-note { font-size: .9rem; line-height: 1.5; color: #4a5d4f; }
+.abandon-mission { background: transparent; border: 0; color: var(--grass-deep); font: inherit; text-decoration: underline; text-underline-offset: 4px; padding: 1rem; cursor: pointer; min-height: 44px; }
+.mission-outcome { background: var(--grass-light); border: 2px solid var(--grass); padding: 1rem; border-radius: 12px; line-height: 1.5; }
+
 .tier-row {
   display: flex;
   align-items: center;
