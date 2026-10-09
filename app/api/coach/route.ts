@@ -1,7 +1,6 @@
 import { tierForHours } from "@/lib/tiers";
 
-const MODEL = "gemma-4-31b-it";
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const MODELS = ["gemma-4-31b-it", "gemma-4-26b-a4b-it"];
 
 export async function POST(req: Request) {
   const apiKey = process.env.GOOGLE_AI_STUDIO_KEY;
@@ -23,32 +22,55 @@ export async function POST(req: Request) {
 
   const tier = tierForHours(hours);
 
-  const upstream = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: tier.systemPrompt }] },
-      contents: [
-        {
-          parts: [
-            {
-              text: `My screen time today is ${hours} hours. Coach me.`,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        responseMimeType: "application/json",
+  const requestBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: tier.systemPrompt }] },
+    contents: [
+      {
+        parts: [
+          {
+            text: `My screen time today is ${hours} hours. Coach me. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
+          },
+        ],
       },
-    }),
+    ],
+    generationConfig: {
+      temperature: 0.9,
+      thinkingConfig: {
+        thinkingLevel: "minimal",
+      },
+    },
   });
+
+  let upstream: Response | undefined;
+  for (const model of MODELS) {
+    try {
+      upstream = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: requestBody,
+        }
+      );
+    } catch (error) {
+      console.error(`${model} request failed:`, error);
+      continue;
+    }
+
+    if (upstream.ok || upstream.status < 500) break;
+    console.error(`${model} returned ${upstream.status}; trying fallback model.`);
+  }
+
+  if (!upstream) {
+    return Response.json({ error: "Could not reach the model service." }, { status: 502 });
+  }
 
   if (!upstream.ok) {
     const detail = await upstream.text();
+    console.error(`Gemma returned ${upstream.status}:`, detail);
     return Response.json(
       { error: "Model call failed.", detail: detail.slice(0, 300) },
       { status: 502 }
@@ -56,14 +78,23 @@ export async function POST(req: Request) {
   }
 
   const data = await upstream.json();
-  const raw: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const parts: Array<{ text?: string; thought?: boolean }> = data?.candidates?.[0]?.content?.parts ?? [];
+  // Thinking models may split the final answer across several non-thinking parts.
+  const raw = parts
+    .filter((part) => !part.thought && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("");
   if (!raw) {
     return Response.json({ error: "Empty model response." }, { status: 502 });
   }
 
   let parsed: { roast: string; mission: string };
   try {
-    parsed = JSON.parse(raw);
+    const json = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw;
+    parsed = JSON.parse(json);
+    if (typeof parsed.roast !== "string" || typeof parsed.mission !== "string") {
+      throw new Error("Missing expected fields");
+    }
   } catch {
     return Response.json({ error: "Model returned non-JSON.", raw: raw.slice(0, 300) }, { status: 502 });
   }
