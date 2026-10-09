@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { TIERS, tierForHours, type TierId } from "@/lib/tiers";
 import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
+import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
 
 interface CoachResult {
   tier: TierId;
@@ -10,12 +11,14 @@ interface CoachResult {
   emoji: string;
   roast: string;
   mission: string;
+  preferences: MissionPreferences;
 }
 
 const STREAK_KEY = "tgc-streak";
 
 export default function Home() {
   const [hours, setHours] = useState(3);
+  const [preferences, setPreferences] = useState<MissionPreferences>(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export default function Home() {
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hours }),
+        body: JSON.stringify({ hours, preferences }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Coach is unavailable.");
@@ -103,6 +106,25 @@ export default function Home() {
             Verdict: <strong>{preview.label}</strong>
           </span>
         </div>
+        <fieldset className="mission-preferences" disabled={loading}>
+          <legend>Make it fit your day</legend>
+          <label htmlFor="mission-minutes">Time outside
+            <select id="mission-minutes" value={preferences.minutes} onChange={(e) => setPreferences({ ...preferences, minutes: Number(e.target.value) as MissionPreferences["minutes"] })}>
+              <option value={5}>5 minutes</option><option value={10}>10 minutes</option><option value={15}>15 minutes</option>
+            </select>
+          </label>
+          <label htmlFor="mission-movement">Movement
+            <select id="mission-movement" value={preferences.movement} onChange={(e) => setPreferences({ ...preferences, movement: e.target.value as MissionPreferences["movement"] })}>
+              <option value="walk">Take a walk</option><option value="nearby">Stay nearby</option>
+            </select>
+          </label>
+          <label htmlFor="coach-tone">Coach energy
+            <select id="coach-tone" value={preferences.tone} onChange={(e) => setPreferences({ ...preferences, tone: e.target.value as MissionPreferences["tone"] })}>
+              <option value="gentle">Gentle</option><option value="spicy">Spicy</option>
+            </select>
+          </label>
+          <p>Stay nearby keeps your mission in one outdoor spot. Gentle keeps the coach kind and encouraging.</p>
+        </fieldset>
         <button onClick={coachMe} disabled={loading} className="cta">
           {loading ? "Consulting the gremlin..." : "Coach me"}
         </button>
@@ -122,6 +144,7 @@ export default function Home() {
           </div>
           <div className="mission">
             <p className="mission-label">Your mission</p>
+            <p className="mission-summary">{result.preferences.minutes} min max · {result.preferences.movement === "nearby" ? "Stay nearby" : "Take a walk"} · {result.preferences.tone === "gentle" ? "Gentle" : "Spicy"}</p>
             <p>{result.mission}</p>
           </div>
           <button onClick={touchGrass} disabled={touchedToday} className="cta secondary">

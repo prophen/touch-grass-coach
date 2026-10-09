@@ -7,11 +7,16 @@ Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models a
 ## How it works
 
 1. You drag a slider to log today's screen time (0-12h).
+   Choose a 5, 10, or 15-minute mission, take a walk or stay in one nearby outdoor spot, and pick gentle or spicy coaching.
 2. Your hours pick one of four roast tiers: Seedling, Sprout, Weed, Feral.
 3. The tier's system prompt goes to Gemma via the AI Studio `generateContent` endpoint, which returns a roast plus one concrete 15-minute outdoor mission.
 4. You go outside, come back, hit "I touched grass", and your streak (localStorage, no account) grows.
 
 The API key never leaves the server: the browser talks to `/api/coach`, which calls Google.
+
+Mission preferences are validated by the server and included in Gemma's instructions. Gentle mode replaces the tier's roast persona with supportive coaching; spicy mode keeps the original tier personality. The time limit includes going out and returning. Generated missions remain model suggestions, so these constraints are prompted rather than mechanically guaranteed. Requests without preferences retain the original 15-minute, walking, spicy defaults.
+
+Preference checks: `node --experimental-strip-types --test tests/preferences.test.mjs` (Node 22.6+).
 
 Generation uses minimal thinking and a 256-token output cap for short replies. Each model attempt has a 12-second deadline, including reading the response; a timeout or server error tries the fallback. Provider load can still affect response time.
 

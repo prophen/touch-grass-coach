@@ -1,30 +1,31 @@
-import { tierForHours } from "@/lib/tiers";
+import { BASE_RULES, tierForHours } from "@/lib/tiers";
+import { parsePreferences, preferenceInstructions, type MissionPreferences } from "@/lib/preferences";
 
 const MODELS = ["gemma-4-26b-a4b-it", "gemma-4-31b-it"];
 const MODEL_TIMEOUT_MS = 12_000;
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GOOGLE_AI_STUDIO_KEY;
-  if (!apiKey) {
-    return Response.json(
-      { error: "Missing GOOGLE_AI_STUDIO_KEY. Copy .env.example to .env and add your free AI Studio key." },
-      { status: 500 }
-    );
-  }
-
   let hours: number;
+  let preferences: MissionPreferences;
   try {
     const body = await req.json();
-    hours = Number(body.hours);
+    hours = body.hours;
+    if (typeof hours !== "number") throw new Error("bad hours");
     if (!Number.isFinite(hours) || hours < 0 || hours > 24) throw new Error("bad hours");
+    preferences = parsePreferences(body.preferences);
   } catch {
-    return Response.json({ error: "Send { hours: 0-24 }." }, { status: 400 });
+    return Response.json({ error: "Send hours from 0–24 and preferences with minutes (5, 10, or 15), movement (walk or nearby), and tone (gentle or spicy)." }, { status: 400 });
+  }
+
+  const apiKey = process.env.GOOGLE_AI_STUDIO_KEY;
+  if (!apiKey) {
+    return Response.json({ error: "Missing GOOGLE_AI_STUDIO_KEY. Copy .env.example to .env and add your free AI Studio key." }, { status: 500 });
   }
 
   const tier = tierForHours(hours);
 
   const requestBody = JSON.stringify({
-    systemInstruction: { parts: [{ text: tier.systemPrompt }] },
+    systemInstruction: { parts: [{ text: `${preferences.tone === "gentle" ? BASE_RULES : tier.systemPrompt}\n${preferenceInstructions(preferences)}` }] },
     contents: [
       {
         parts: [
@@ -125,5 +126,6 @@ export async function POST(req: Request) {
     emoji: tier.emoji,
     roast: parsed.roast,
     mission: parsed.mission,
+    preferences,
   });
 }
