@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TIERS, tierForHours, type TierId } from "@/lib/tiers";
+import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 
 interface CoachResult {
   tier: TierId;
@@ -82,6 +83,7 @@ export default function Home() {
       </header>
 
       <section className="card">
+        <div style={{ textAlign: "center" }}><GardenMascot tier={preview.id} /></div>
         <label htmlFor="hours" className="label">
           Screen time today: <strong>{hours}h</strong>
         </label>
@@ -108,12 +110,16 @@ export default function Home() {
 
       {error && <p className="error">{error}</p>}
 
+      <div aria-live="polite" aria-atomic="true">
       {result && (
         <section className="card result">
-          <p className="result-tier">
-            {result.emoji} {result.label} status confirmed
-          </p>
-          <blockquote className="roast">{result.roast}</blockquote>
+          <div className="coach-conversation">
+            <div className="coach-speaker"><GardenMascot tier={result.tier} size={130} /></div>
+            <div className="speech-bubble">
+              <p className="result-tier">{MASCOT_NAMES[result.tier]} · {result.label} coach</p>
+              <blockquote className="roast">{result.roast}</blockquote>
+            </div>
+          </div>
           <div className="mission">
             <p className="mission-label">Your mission</p>
             <p>{result.mission}</p>
@@ -123,6 +129,7 @@ export default function Home() {
           </button>
         </section>
       )}
+      </div>
 
       <section className="streak">
         <p>
@@ -141,6 +148,7 @@ export default function Home() {
           </div>
         ))}
       </footer>
+      <p style={{ textAlign: "center", marginTop: "1.5rem" }}><a href="/mascots" style={{ color: "var(--grass-deep)" }}>Meet the chaotic garden ↗</a></p>
     </main>
   );
 }

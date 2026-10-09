@@ -129,11 +129,59 @@ body {
 }
 
 .roast {
-  margin: 0 0 1rem;
-  padding-left: 1rem;
-  border-left: 4px solid var(--accent);
-  font-size: 1.15rem;
-  font-style: italic;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.coach-conversation {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 1.5rem;
+}
+
+.coach-speaker { text-align: center; }
+
+.speech-bubble {
+  position: relative;
+  padding: 1.1rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 23px 19px 25px 8px;
+  box-shadow: 3px 4px 0 var(--ink);
+}
+
+.speech-bubble::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background: var(--paper);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.speech-bubble .result-tier {
+  font-size: .7rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: .6rem;
+}
+
+@media (max-width: 480px) {
+  .coach-conversation { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .speech-bubble::before {
+    top: -10px;
+    left: calc(50% - 8px);
+    transform: rotate(135deg);
+  }
 }
 
 .mission {

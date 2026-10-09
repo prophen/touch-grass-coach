@@ -1,0 +1,13 @@
+.garden-mascot { position: relative; display: inline-block; aspect-ratio: 1; vertical-align: middle; }
+.garden-mascot__sprite { position: absolute; inset: 0; background: center / contain no-repeat; transform-origin: 50% 85%; will-change: transform; }
+.garden-mascot__shadow { position: absolute; left: 27%; right: 27%; bottom: 7%; height: 5%; border-radius: 50%; background: #183820; opacity: .12; }
+.garden-mascot--seedling .garden-mascot__sprite { background-image: url('/mascots/seedling.png'); animation: pip-bob 3.2s ease-in-out infinite; }
+.garden-mascot--sprout .garden-mascot__sprite { background-image: url('/mascots/sprout.png'); animation: sprig-sway 2.8s ease-in-out infinite; }
+.garden-mascot--weed .garden-mascot__sprite { background-image: url('/mascots/weed.png'); animation: scruff-hop 3.6s ease-in-out infinite; }
+.garden-mascot--feral .garden-mascot__sprite { background-image: url('/mascots/feral.png'); animation: goblin-jump 2.4s ease-in-out infinite; }
+@keyframes pip-bob { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-7px) rotate(3deg); } }
+@keyframes sprig-sway { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg) translateY(-3px); } }
+@keyframes scruff-hop { 0%,65%,100% { transform: rotate(-4deg); } 70% { transform: scale(1.07,.93) rotate(-4deg); } 79% { transform: translateY(-15px) rotate(7deg); } 86% { transform: scale(1.06,.94) rotate(1deg); } 92% { transform: rotate(-4deg); } }
+@keyframes goblin-jump { 0%,100% { transform: rotate(-5deg); } 10%,30% { transform: rotate(5deg); } 20%,40% { transform: rotate(-5deg); } 48% { transform: scale(1.08,.92); } 62% { transform: translateY(-23px) rotate(9deg) scale(.96,1.04); } 76% { transform: scale(1.1,.9) rotate(-3deg); } 86% { transform: rotate(3deg); } }
+.garden-mascot--paused .garden-mascot__sprite { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .garden-mascot__sprite { animation: none !important; will-change: auto; } }

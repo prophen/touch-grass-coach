@@ -1,6 +1,7 @@
 import { tierForHours } from "@/lib/tiers";
 
-const MODELS = ["gemma-4-31b-it", "gemma-4-26b-a4b-it"];
+const MODELS = ["gemma-4-26b-a4b-it", "gemma-4-31b-it"];
+const MODEL_TIMEOUT_MS = 12_000;
 
 export async function POST(req: Request) {
   const apiKey = process.env.GOOGLE_AI_STUDIO_KEY;
@@ -28,13 +29,14 @@ export async function POST(req: Request) {
       {
         parts: [
           {
-            text: `My screen time today is ${hours} hours. Coach me. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
+            text: `My screen time today is ${hours} hours. Coach me. Keep each field under 40 words. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
           },
         ],
       },
     ],
     generationConfig: {
       temperature: 0.9,
+      maxOutputTokens: 256,
       thinkingConfig: {
         thinkingLevel: "minimal",
       },
@@ -42,7 +44,11 @@ export async function POST(req: Request) {
   });
 
   let upstream: Response | undefined;
+  let data;
+  let lastFailureWasTimeout = false;
   for (const model of MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
     try {
       upstream = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -53,31 +59,45 @@ export async function POST(req: Request) {
             "x-goog-api-key": apiKey,
           },
           body: requestBody,
+          signal: controller.signal,
         }
       );
+      // Keep the deadline active while reading the response body too.
+      if (upstream.ok) {
+        data = await upstream.json();
+        break;
+      }
+      if (upstream.status < 500) break;
+      await upstream.body?.cancel();
     } catch (error) {
+      lastFailureWasTimeout = controller.signal.aborted;
       console.error(`${model} request failed:`, error);
+      upstream = undefined;
       continue;
+    } finally {
+      clearTimeout(timeout);
     }
 
-    if (upstream.ok || upstream.status < 500) break;
     console.error(`${model} returned ${upstream.status}; trying fallback model.`);
   }
 
   if (!upstream) {
-    return Response.json({ error: "Could not reach the model service." }, { status: 502 });
+    return Response.json(
+      { error: lastFailureWasTimeout
+        ? "The coach took too long to respond. Please try again."
+        : "The server could not connect to the coach. Check the server's network access and try again." },
+      { status: lastFailureWasTimeout ? 504 : 502 }
+    );
   }
 
   if (!upstream.ok) {
-    const detail = await upstream.text();
-    console.error(`Gemma returned ${upstream.status}:`, detail);
+    console.error(`Gemma returned ${upstream.status}`);
     return Response.json(
-      { error: "Model call failed.", detail: detail.slice(0, 300) },
+      { error: "Model call failed. Please try again." },
       { status: 502 }
     );
   }
 
-  const data = await upstream.json();
   const parts: Array<{ text?: string; thought?: boolean }> = data?.candidates?.[0]?.content?.parts ?? [];
   // Thinking models may split the final answer across several non-thinking parts.
   const raw = parts
