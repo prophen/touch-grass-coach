@@ -10,13 +10,17 @@ Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models a
    Choose a 5, 10, or 15-minute mission, take a walk or stay in one nearby outdoor spot, and pick gentle or spicy coaching.
 2. Your hours pick one of four roast tiers: Seedling, Sprout, Weed, Feral.
 3. The tier's system prompt goes to Gemma via the AI Studio `generateContent` endpoint, which returns a roast plus one concrete 15-minute outdoor mission.
-4. You go outside, come back, hit "I touched grass", and your streak (localStorage, no account) grows.
+4. Tap "Let's go outside" to save the mission on this device and enter a simple "Pocket your phone" view. Close the app, go outside, and reopen it to finish or abandon the same mission.
+5. Completing a mission saves its terminal state and daily progress together in localStorage, preventing repeat completion after reload. Abandoning leaves progress unchanged. No account is required. The existing counter still tracks credited days; consecutive-day corrections come in slice 3.
 
 The API key never leaves the server: the browser talks to `/api/coach`, which calls Google.
 
 Mission preferences are validated by the server and included in Gemma's instructions. Gentle mode replaces the tier's roast persona with supportive coaching; spicy mode keeps the original tier personality. The time limit includes going out and returning. Generated missions remain model suggestions, so these constraints are prompted rather than mechanically guaranteed. Requests without preferences retain the original 15-minute, walking, spicy defaults.
 
 Preference checks: `node --experimental-strip-types --test tests/preferences.test.mjs` (Node 22.6+).
+Mission persistence checks: `node --experimental-strip-types --test tests/mission.test.mjs`.
+
+Active missions are stored locally under `tgc-mission`, including their preferences and current progress. They restore without another AI request. Storage failures keep the mission on screen and show a retry message; clearing browser data removes saved missions and progress. Starting another mission while one is active resumes the existing one. Other tabs synchronize saved changes.
 
 Generation uses minimal thinking and a 256-token output cap for short replies. Each model attempt has a 12-second deadline, including reading the response; a timeout or server error tries the fallback. Provider load can still affect response time.
 
