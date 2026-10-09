@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       {
         parts: [
           {
-            text: `My screen time today is ${hours} hours. Coach me. Keep each field under 40 words. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
+            text: `My screen time today is ${hours} hours. I chose ${preferences.tone} coaching, ${preferences.minutes} minutes maximum, and ${preferences.movement === "nearby" ? "staying in one nearby outdoor spot" : "a short walk"}. Coach me using those preferences. Keep each field under 40 words. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
           },
         ],
       },
