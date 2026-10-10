@@ -322,3 +322,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @keyframes mascot-wave { 20%,60% { transform: rotate(9deg); } 40%,80% { transform: rotate(-9deg); } }
 @keyframes bubble-arrival { from { transform: translateY(6px) scale(.98); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .mascot-reaction, .mascot-goodbye, .answer-arrival { animation: none; } .mascot-slider { transform: none !important; transition: none; } .plant-button { transition: none; } .plant-button:hover { transform: none; } }
+
+.coach-memory { margin: 0 0 1.3rem; padding: 1rem; border: 1px solid #9ab79e; border-radius: 12px; background: #fefee3; font-size: .85rem; line-height: 1.5; }
+.coach-memory h2 { font-size: 1rem; margin: 0; }
+.coach-memory p { margin: .5rem 0; }
+.coach-memory summary { cursor: pointer; min-height: 44px; padding: .65rem 0; }
+.coach-memory summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.coach-memory ol { padding-left: 1.3rem; max-height: 240px; overflow-y: auto; overflow-wrap: anywhere; }
+.coach-memory li { margin: .75rem 0; }
+.coach-memory time, .memory-footnote { color: #4a5d4f; font-size: .8rem; }
+.clear-memory { padding: .6rem .8rem; min-height: 44px; border: 1px solid var(--grass); border-radius: 8px; background: #fff; color: var(--grass-deep); font: inherit; cursor: pointer; }
+.clear-memory:disabled { opacity: .5; cursor: default; }

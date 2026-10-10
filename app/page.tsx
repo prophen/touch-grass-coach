@@ -6,8 +6,10 @@ import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
 import { GrowingGarden } from "@/app/components/GrowingGarden";
 import { playGardenSound } from "@/lib/garden-sound";
+import { CoachMemory } from "@/app/components/CoachMemory";
+import { recentMissionTexts } from "@/lib/mission-history";
 
-import { MISSION_KEY, EMPTY_PROGRESS, localDay, currentStreak, normalizeProgress, readMission, startMission, finishMission, type Progress, type CoachResult, type SavedMission } from "@/lib/mission";
+import { MISSION_KEY, EMPTY_PROGRESS, localDay, currentStreak, normalizeProgress, readMission, startMission, finishMission, clearMissionHistory, type Progress, type CoachResult, type SavedMission } from "@/lib/mission";
 
 const STREAK_KEY = "tgc-streak";
 
@@ -30,6 +32,16 @@ export default function Home() {
   const soundEnabled = useRef(false);
   const [farewell, setFarewell] = useState(false);
   const [answerNumber, setAnswerNumber] = useState(0);
+  const [memoryNotice, setMemoryNotice] = useState("");
+  const history = savedMission?.history ?? [];
+  function clearHistory() {
+    try {
+      const saved = clearMissionHistory(localStorage);
+      setSavedMission(saved);
+      if (saved) setProgress(saved.progress);
+      setMemoryNotice("Coaching history cleared. Your garden and progress are safe.");
+    } catch { setMemoryNotice("History couldn’t be cleared. Browser storage is unavailable; please try again."); }
+  }
   useEffect(() => { try { soundEnabled.current = localStorage.getItem("tgc-sound") === "on"; setSound(soundEnabled.current); } catch {} }, []);
   useEffect(() => {
     if (!farewell) return;
@@ -106,7 +118,7 @@ export default function Home() {
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hours, preferences }),
+        body: JSON.stringify({ hours, preferences, recentMissions: recentMissionTexts(readMission(localStorage)?.history ?? []) }),
         signal: controller.signal,
       });
       let data;
@@ -148,6 +160,7 @@ export default function Home() {
     try {
       const before = readMission(localStorage);
       const saved = finishMission(localStorage, savedMission.id, status);
+      setMemoryNotice("");
       if (before?.id === savedMission.id && before.status === "active" && saved?.status === "completed" && status === "completed") {
         setCelebration(saved.id);
         if (sound) void playGardenSound("plant");
@@ -181,6 +194,7 @@ export default function Home() {
       {error && <p className="error" role="alert">{error}</p>}
       <button onClick={() => finish("completed")} className="cta secondary">I'm back — mission complete</button>
       <button onClick={() => finish("abandoned")} className="abandon-mission">Abandon this mission</button>
+      <CoachMemory history={history} onClear={clearHistory} disabled={false} notice={memoryNotice} />
     </main>
   );
 
@@ -199,6 +213,7 @@ export default function Home() {
       </header>
       <button className="sound-toggle" aria-pressed={sound} onClick={toggleSound}>Garden sounds: {sound ? "on" : "off"}</button>
       <p className="garden-greeting">{progress.totalMissions > 0 ? "Back for more photosynthesis? Your garden missed you." : "A little fresh air. A little chaos. Let’s grow something."}</p>
+      <CoachMemory history={history} onClear={clearHistory} disabled={loading} notice={memoryNotice} />
 
       {savedMission?.status === "completed" && <p className="mission-outcome" role="status">Grass touched. Welcome back!{touchedToday ? " Today's progress is saved." : " Ready for a new day?"}</p>}
       {celebration && savedMission?.status === "completed" && <div className="garden-celebration" role="status"><div className="garden-celebration__mascot"><GardenMascot tier={savedMission.result.tier} size={100} paused /></div><p><strong>A new plant just moved in!</strong><br />{MASCOT_NAMES[savedMission.result.tier]} is rooting for you.</p></div>}

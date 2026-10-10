@@ -2,6 +2,7 @@ import { BASE_RULES, tierForHours } from "@/lib/tiers";
 import { parsePreferences, preferenceInstructions, type MissionPreferences } from "@/lib/preferences";
 import { RequestLimiter, readSmallJson } from "@/lib/request-limit";
 import { parseCoachResponse } from "@/lib/coach-response";
+import { parseRecentMissions, memoryInstructions } from "@/lib/mission-history";
 
 export const maxDuration = 30;
 const limiter = new RequestLimiter();
@@ -18,14 +19,16 @@ export async function POST(req: Request) {
   if (retryAfter) return Response.json({ error: "The garden needs a breather. Please wait before requesting another mission.", retryAfter }, { status: 429, headers: { "Retry-After": String(retryAfter), "Cache-Control": "no-store" } });
   let hours: number;
   let preferences: MissionPreferences;
+  let recentMissions: string[];
   try {
-    const body = await readSmallJson(req) as { hours?: unknown; preferences?: unknown };
+    const body = await readSmallJson(req) as { hours?: unknown; preferences?: unknown; recentMissions?: unknown };
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("bad body");
     if (typeof body.hours !== "number") throw new Error("bad hours");
     hours = body.hours;
     if (typeof hours !== "number") throw new Error("bad hours");
     if (!Number.isFinite(hours) || hours < 0 || hours > 24) throw new Error("bad hours");
     preferences = parsePreferences(body.preferences);
+    recentMissions = parseRecentMissions(body.recentMissions);
   } catch (error) {
     if (error instanceof Error && error.message === "Body too large") return Response.json({ error: "That request is too large. Please use the mission controls." }, { status: 413 });
     return Response.json({ error: "Send hours from 0–24 and preferences with minutes (5, 10, or 15), movement (walk or nearby), and tone (gentle or spicy)." }, { status: 400 });
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
       {
         parts: [
           {
-            text: `My screen time today is ${hours} hours. I chose ${preferences.tone} coaching, ${preferences.minutes} minutes maximum, and ${preferences.movement === "nearby" ? "staying in one nearby outdoor spot" : "a short walk"}. Coach me using those preferences. Keep each field under 40 words. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.`,
+            text: `My screen time today is ${hours} hours. I chose ${preferences.tone} coaching, ${preferences.minutes} minutes maximum, and ${preferences.movement === "nearby" ? "staying in one nearby outdoor spot" : "a short walk"}. Coach me using those preferences. Keep each field under 40 words. Return exactly one JSON object with string fields "roast" and "mission" and no surrounding text.${memoryInstructions(recentMissions)}`,
           },
         ],
       },
