@@ -2,6 +2,8 @@
 
 Log your screen time. Get roasted by an open-weight model. Go outside.
 
+Public demo: [touch-grass-coach.vercel.app](https://touch-grass-coach.vercel.app).
+
 Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models at the core. The coach is **Gemma** (`gemma-4-26b-a4b-it`) running on Google's free AI Studio tier, with `gemma-4-31b-it` as a fallback. No downloads, no GPU, no disk space needed.
 
 ## How it works
