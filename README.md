@@ -11,7 +11,9 @@ Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models a
 2. Your hours pick one of four roast tiers: Seedling, Sprout, Weed, Feral.
 3. The tier's system prompt goes to Gemma via the AI Studio `generateContent` endpoint, which returns a roast plus one concrete 15-minute outdoor mission.
 4. Tap "Let's go outside" to save the mission on this device and enter a simple "Pocket your phone" view. Close the app, go outside, and reopen it to finish or abandon the same mission.
-5. Completing a mission saves its terminal state and daily progress together in localStorage, preventing repeat completion after reload. Abandoning leaves progress unchanged. No account is required. The existing counter still tracks credited days; consecutive-day corrections come in slice 3.
+5. Completing a mission saves its terminal state, total completed missions, completion dates, and consecutive-day streak together in localStorage, preventing repeat completion after reload. Each completed mission adds to the total; multiple missions in one local calendar day only count once toward the streak. A missed day resets the streak, and abandoning leaves progress unchanged. No account is required.
+
+Older progress is migrated when read: previously credited outdoor days remain visible separately. Because older versions did not record every date or repeat mission, the migrated streak begins from the last recorded day and mission totals start from this update. Stored dates use the device's local calendar, with calendar-day comparisons that handle daylight-saving changes. Streaks refresh on returning to the app and at least once per minute while open.
 
 The API key never leaves the server: the browser talks to `/api/coach`, which calls Google.
 

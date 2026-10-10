@@ -224,6 +224,8 @@ body {
   color: var(--grass-deep);
 }
 
+.progress-note { font-size: .8rem; line-height: 1.5; color: #4a5d4f; }
+
 .tiers {
   display: grid;
   grid-template-columns: 1fr 1fr;

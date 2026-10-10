@@ -5,7 +5,7 @@ import { TIERS, tierForHours } from "@/lib/tiers";
 import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
 
-import { MISSION_KEY, readMission, startMission, finishMission, type CoachResult, type SavedMission } from "@/lib/mission";
+import { MISSION_KEY, EMPTY_PROGRESS, localDay, currentStreak, normalizeProgress, readMission, startMission, finishMission, type Progress, type CoachResult, type SavedMission } from "@/lib/mission";
 
 const STREAK_KEY = "tgc-streak";
 
@@ -15,9 +15,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [streak, setStreak] = useState(0);
-  const [touchedToday, setTouchedToday] = useState(false);
-  const [lastDay, setLastDay] = useState("");
+  const [progress, setProgress] = useState<Progress>(EMPTY_PROGRESS);
+  const [today, setToday] = useState(localDay());
+  const streak = currentStreak(progress, new Date(`${today}T12:00:00`));
+  const touchedToday = progress.last === today;
   const [savedMission, setSavedMission] = useState<SavedMission | null>(null);
   const [ready, setReady] = useState(false);
   const missionHeading = useRef<HTMLHeadingElement>(null);
@@ -29,15 +30,9 @@ export default function Home() {
       setSavedMission(saved);
       const raw = localStorage.getItem(STREAK_KEY);
       if (saved || raw) {
-        const { count, last } = saved?.progress ?? JSON.parse(raw!);
-        const today = new Date().toDateString();
-        setStreak(Number.isSafeInteger(count) && count >= 0 ? count : 0);
-        setLastDay(typeof last === "string" ? last : "");
-        setTouchedToday(last === today);
+        setProgress(saved?.progress ?? normalizeProgress(JSON.parse(raw!)));
       } else {
-        setStreak(0);
-        setLastDay("");
-        setTouchedToday(false);
+        setProgress(EMPTY_PROGRESS);
       }
     } catch {
       setError("Browser storage is unavailable. Enable it to save a mission before heading outside.");
@@ -49,7 +44,16 @@ export default function Home() {
       if (event.key === MISSION_KEY || event.key === null) restore();
     }
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    function refreshDay() { setToday(localDay()); }
+    const timer = window.setInterval(refreshDay, 60_000);
+    window.addEventListener("focus", refreshDay);
+    document.addEventListener("visibilitychange", refreshDay);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", refreshDay);
+      document.removeEventListener("visibilitychange", refreshDay);
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export default function Home() {
   function headOutside() {
     if (!result) return;
     try {
-      setSavedMission(startMission(localStorage, result, { count: streak, last: lastDay }));
+      setSavedMission(startMission(localStorage, result, progress));
       setError(null);
     } catch {
       setError("We couldn't save your mission. Enable browser storage and try again before closing the app.");
@@ -94,9 +98,8 @@ export default function Home() {
       const saved = finishMission(localStorage, savedMission.id, status);
       setSavedMission(saved);
       if (saved) {
-        setStreak(saved.progress.count);
-        setLastDay(saved.progress.last);
-        setTouchedToday(saved.progress.last === new Date().toDateString());
+        setProgress(saved.progress);
+        setToday(localDay());
       }
       setResult(null);
       setError(null);
@@ -209,8 +212,10 @@ export default function Home() {
       <section className="streak">
         <p>
           <span className="streak-num">{streak}</span>{" "}
-          {streak === 1 ? "day" : "days"} of touching grass
+          {streak === 1 ? "day" : "days"} in your current streak
         </p>
+        <p><strong>{progress.totalMissions}</strong> {progress.totalMissions === 1 ? "mission" : "missions"} completed</p>
+        {progress.legacyDays > 0 && <p className="progress-note">{progress.legacyDays} earlier outdoor {progress.legacyDays === 1 ? "day" : "days"} preserved. Mission totals start with this update; earlier consecutive days weren't recorded.</p>}
       </section>
 
       <footer className="tiers">
