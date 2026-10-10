@@ -44,11 +44,13 @@ Codex helped implement and check the app, including the mission persistence, vis
 
 ## Why Does Open Innovation Matter?
 
-Gemma's open weights offer a path to changing how inference is hosted while retaining the central product idea. The personas and preference instructions are visible in the repository, and the model choice is explicit in the server route. A future version could explore a different serving provider or local inference rather than rebuilding the coaching experience around one proprietary model family.
+This is the part the challenge asks for, and the answer is cost and control.
 
-That possibility is different from what this release actually does: inference is hosted by Google and new missions require internet access. I did not fine-tune Gemma, run it locally, or benchmark it against a closed model. Its practical contribution here is a short, varied mission expressed through a garden character, with simple application code around it.
+The entire build costs $0. Gemma is open-weight, served through AI Studio's free tier, so there is no inference bill, no GPU, and nothing to download. My laptop has no disk space to spare for model weights, and that turned out not to matter at all.
 
-Using an open-weight model does not make every component open or remove hosted-service terms. It makes the model's role clearer and gives the project room to experiment beyond this first hosted implementation.
+Because the model is open-weight, it is swappable. The /api/coach route speaks a plain HTTP contract, so I can point it at any OpenAI-compatible open model endpoint tomorrow without touching the UI, the tiers, or the JSON contract. The comedy lives in the system prompts, not in a provider lock-in. That is the bet open weights let you make: the interesting layer of your app is yours.
+
+The honest caveat: your screen time number does travel to Google's API. This is not the fully-local privacy story. It is the "open model, zero cost, anyone can run it free” story.
 
 ## What I Learned
 
