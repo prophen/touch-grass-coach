@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { TIERS, tierForHours } from "@/lib/tiers";
 import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
+import { GrowingGarden } from "@/app/components/GrowingGarden";
 
 import { MISSION_KEY, EMPTY_PROGRESS, localDay, currentStreak, normalizeProgress, readMission, startMission, finishMission, type Progress, type CoachResult, type SavedMission } from "@/lib/mission";
 
@@ -21,6 +22,7 @@ export default function Home() {
   const touchedToday = progress.last === today;
   const [savedMission, setSavedMission] = useState<SavedMission | null>(null);
   const [ready, setReady] = useState(false);
+  const [celebration, setCelebration] = useState<string | null>(null);
   const missionHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -60,6 +62,12 @@ export default function Home() {
     if (savedMission?.status === "active") missionHeading.current?.focus();
   }, [savedMission?.id, savedMission?.status]);
 
+  useEffect(() => {
+    if (!celebration) return;
+    const timeout = window.setTimeout(() => setCelebration(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [celebration]);
+
   const preview = tierForHours(hours);
 
   async function coachMe() {
@@ -86,6 +94,7 @@ export default function Home() {
     if (!result) return;
     try {
       setSavedMission(startMission(localStorage, result, progress));
+      setCelebration(null);
       setError(null);
     } catch {
       setError("We couldn't save your mission. Enable browser storage and try again before closing the app.");
@@ -95,7 +104,9 @@ export default function Home() {
   function finish(status: "completed" | "abandoned") {
     if (!savedMission) return;
     try {
+      const before = readMission(localStorage);
       const saved = finishMission(localStorage, savedMission.id, status);
+      if (before?.id === savedMission.id && before.status === "active" && saved?.status === "completed" && status === "completed") setCelebration(saved.id);
       setSavedMission(saved);
       if (saved) {
         setProgress(saved.progress);
@@ -140,6 +151,7 @@ export default function Home() {
       </header>
 
       {savedMission?.status === "completed" && <p className="mission-outcome" role="status">Grass touched. Welcome back!{touchedToday ? " Today's progress is saved." : " Ready for a new day?"}</p>}
+      {celebration && savedMission?.status === "completed" && <div className="garden-celebration" role="status"><div className="garden-celebration__mascot"><GardenMascot tier={savedMission.result.tier} size={100} paused /></div><p><strong>A new plant just moved in!</strong><br />{MASCOT_NAMES[savedMission.result.tier]} is rooting for you.</p></div>}
       {savedMission?.status === "abandoned" && <p className="mission-outcome" role="status">Mission set aside. Pick something that fits your day.</p>}
 
       <section className="card">
@@ -217,6 +229,8 @@ export default function Home() {
         <p><strong>{progress.totalMissions}</strong> {progress.totalMissions === 1 ? "mission" : "missions"} completed</p>
         {progress.legacyDays > 0 && <p className="progress-note">{progress.legacyDays} earlier outdoor {progress.legacyDays === 1 ? "day" : "days"} preserved. Mission totals start with this update; earlier consecutive days weren't recorded.</p>}
       </section>
+
+      <GrowingGarden total={progress.totalMissions} celebrating={Boolean(celebration)} />
 
       <footer className="tiers">
         {TIERS.map((t) => (
