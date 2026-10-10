@@ -32,7 +32,9 @@ The app uses Next.js, React, TypeScript, illustrated mascot assets, CSS animatio
 
 Gemma is at the center of the coaching interaction. The server combines the selected tier's persona with validated time, movement, and tone preferences. It asks for two short JSON fields: a response and an outdoor mission. Gentle mode uses supportive instructions instead of the roast persona. The mission duration includes leaving and returning.
 
-The browser sends screen hours and preferences to the server, which forwards them to Google. The API key stays on the server. Mission progress and sound preferences stay on the device. This version does not send a mission history, precise location, or photographs to the model.
+The browser sends screen hours, preferences, and up to three recent completed mission texts to the server, which forwards them to Google. The API key stays on the server. Mission dates, IDs, progress, and sound preferences stay on the device. This version does not send precise location or photographs to the model.
+
+The coach keeps the last ten completed missions locally. It supplies the latest three texts as untrusted historical data, asking Gemma to suggest a different activity while respecting today's time, movement, and tone choices. Variety is a prompt preference, not a guarantee. The app explains this sharing before coaching and lets you inspect or clear the remembered tasks. Clearing history keeps your plants, streak, and current mission; it cannot erase text already sent to Google. A new completion begins building fresh memory.
 
 The model suggests the activity; ordinary code owns the progress. Starting a mission persists it before showing the outside view. Completing it saves the terminal state and progress together, so another click or a reload cannot award the same plant again. Consecutive-day streaks use the local calendar; multiple missions on one day increase the total without increasing the streak twice.
 

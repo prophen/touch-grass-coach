@@ -9,7 +9,8 @@ The [challenge](https://dev.to/challenges/hacktoberfest-week1-2026-10-05) lists 
 ## Final checks
 
 - [x] Prepare a DEV draft and link the live app and repository.
-- [x] Run all 21 automated tests against the merged app.
+- [x] Run all 26 automated tests against the merged app, including coaching memory.
+- [ ] Confirm the public deployment includes merged PR #10 and the coaching-memory disclosure.
 - [ ] Merge the submission-package PR so the walkthrough links resolve on main.
 - [ ] Try one 5-minute, gentle, stay-nearby mission on a real phone outdoors.
 - [ ] Try one walking mission; check that the suggested task fits going out and returning.
