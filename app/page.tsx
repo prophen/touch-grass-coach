@@ -92,7 +92,10 @@ export default function Home() {
         signal: controller.signal,
       });
       let data;
-      try { data = await res.json(); } catch { throw new Error("The coach couldn't answer just now. Please try again."); }
+      try { data = await res.json(); } catch {
+        if (res.status === 429) data = { error: "The garden needs a breather. Please wait and try again.", retryAfter: 60 };
+        else throw new Error("The coach couldn't answer just now. Please try again.");
+      }
       if (res.status === 429) {
         const seconds = Number(res.headers.get("Retry-After") ?? data.retryAfter ?? 60);
         setCooldown(Number.isFinite(seconds) ? Math.min(300, Math.max(1, Math.ceil(seconds))) : 60);
