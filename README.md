@@ -21,6 +21,9 @@ Mission preferences are validated by the server and included in Gemma's instruct
 
 Preference checks: `node --experimental-strip-types --test tests/preferences.test.mjs` (Node 22.6+).
 Mission persistence checks: `node --experimental-strip-types --test tests/mission.test.mjs`.
+Garden checks: `node --experimental-strip-types --test tests/garden.test.mjs`.
+
+Your garden earns one illustrated plant per recorded completed mission, cycling through daisies, sprouts, wildflowers, and grass tufts. Rewards derive from the saved mission total, so repeat completion cannot add duplicate plants and no separate reward ledger is required. Existing recorded missions get plants automatically. The newest 12 plants are displayed, with the full count retained. Plants survive missed days and reloads; a brief mascot celebration plays only for a fresh completion and respects reduced-motion settings. Clearing browser data clears the garden too.
 
 Active missions are stored locally under `tgc-mission`, including their preferences and current progress. They restore without another AI request. Storage failures keep the mission on screen and show a retry message; clearing browser data removes saved missions and progress. Starting another mission while one is active resumes the existing one. Other tabs synchronize saved changes.
 
