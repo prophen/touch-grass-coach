@@ -4,6 +4,8 @@ Log your screen time. Get roasted by an open-weight model. Go outside.
 
 Public demo: [touch-grass-coach.vercel.app](https://touch-grass-coach.vercel.app).
 
+[Demo walkthrough](docs/demo/README.md) · [Submission draft and checklist](docs/submission/README.md)
+
 Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models at the core. The coach is **Gemma** (`gemma-4-26b-a4b-it`) running on Google's free AI Studio tier, with `gemma-4-31b-it` as a fallback. No downloads, no GPU, no disk space needed.
 
 ## How it works
@@ -11,7 +13,7 @@ Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models a
 1. You drag a slider to log today's screen time (0-12h).
    Choose a 5, 10, or 15-minute mission, take a walk or stay in one nearby outdoor spot, and pick gentle or spicy coaching.
 2. Your hours pick one of four roast tiers: Seedling, Sprout, Weed, Feral.
-3. The tier's system prompt goes to Gemma via the AI Studio `generateContent` endpoint, which returns a roast plus one concrete 15-minute outdoor mission.
+3. The coaching instructions go to Gemma via the AI Studio `generateContent` endpoint, which returns a short response plus one concrete outdoor mission using your selected preferences.
 4. Tap "Let's go outside" to save the mission on this device and enter a simple "Pocket your phone" view. Close the app, go outside, and reopen it to finish or abandon the same mission.
 5. Completing a mission saves its terminal state, total completed missions, completion dates, and consecutive-day streak together in localStorage, preventing repeat completion after reload. Each completed mission adds to the total; multiple missions in one local calendar day only count once toward the streak. A missed day resets the streak, and abandoning leaves progress unchanged. No account is required.
 
@@ -52,6 +54,6 @@ Run all checks with `node --experimental-strip-types --test tests/*.test.mjs` (N
 
 ## Write-up angles (for the DEV post)
 
-- Why an open-weight model: Gemma via AI Studio's free tier means the whole build costs $0 and runs on a laptop with no disk space to spare.
+- Why an open-weight model: hosted Gemma avoids downloading weights or needing a local GPU. Hosted inference requires internet access and is subject to provider quotas and terms; this project does not guarantee zero operating cost.
 - The tier system is the real design: four personas in system prompts, one model. Comedy lives in the prompt, not the parameters.
 - Honest notes: where the model is funniest, where JSON mode saves you, and what happens when you ask for a mission in the rain.
