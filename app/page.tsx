@@ -245,7 +245,7 @@ export default function Home() {
           <p>Stay nearby keeps your mission in one outdoor spot. Gentle keeps the coach kind and encouraging.</p>
         </fieldset>
         <button onClick={coachMe} disabled={loading || cooldown > 0} className="cta">
-          {loading ? "Consulting the gremlin..." : cooldown > 0 ? `Try again in ${cooldown}s` : "Coach me"}
+          {loading ? "Growing your next mission…" : cooldown > 0 ? `Try again in ${cooldown}s` : "Coach me"}
         </button>
         {loading && <p role="status" className="request-status">Finding a mission that fits your day…</p>}
       </section>
