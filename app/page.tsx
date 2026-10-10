@@ -16,6 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
   const [progress, setProgress] = useState<Progress>(EMPTY_PROGRESS);
   const [today, setToday] = useState(localDay());
   const streak = currentStreak(progress, new Date(`${today}T12:00:00`));
@@ -68,24 +69,43 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [celebration]);
 
+  useEffect(() => {
+    if (!cooldown) return;
+    const timeout = window.setTimeout(() => setCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timeout);
+  }, [cooldown]);
+
   const preview = tierForHours(hours);
 
   async function coachMe() {
+    if (loading || cooldown) return;
+    if (!navigator.onLine) { setError("You're offline. Connect to request a new mission; saved missions are still on this device."); return; }
     setLoading(true);
     setError(null);
-    setResult(null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hours, preferences }),
+        signal: controller.signal,
       });
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch {
+        if (res.status === 429) data = { error: "The garden needs a breather. Please wait and try again.", retryAfter: 60 };
+        else throw new Error("The coach couldn't answer just now. Please try again.");
+      }
+      if (res.status === 429) {
+        const seconds = Number(res.headers.get("Retry-After") ?? data.retryAfter ?? 60);
+        setCooldown(Number.isFinite(seconds) ? Math.min(300, Math.max(1, Math.ceil(seconds))) : 60);
+      }
       if (!res.ok) throw new Error(data.error ?? "Coach is unavailable.");
       setResult(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(controller.signal.aborted ? "The coach took too long. Please try again." : e instanceof TypeError ? "Couldn't reach the coach. Check your connection and try again." : e instanceof Error ? e.message : "Something went wrong.");
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -194,12 +214,13 @@ export default function Home() {
           </label>
           <p>Stay nearby keeps your mission in one outdoor spot. Gentle keeps the coach kind and encouraging.</p>
         </fieldset>
-        <button onClick={coachMe} disabled={loading} className="cta">
-          {loading ? "Consulting the gremlin..." : "Coach me"}
+        <button onClick={coachMe} disabled={loading || cooldown > 0} className="cta">
+          {loading ? "Consulting the gremlin..." : cooldown > 0 ? `Try again in ${cooldown}s` : "Coach me"}
         </button>
+        {loading && <p role="status" className="request-status">Finding a mission that fits your day…</p>}
       </section>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <div className="error" role="alert"><p>{error}</p><button onClick={coachMe} disabled={loading || cooldown > 0} className="retry-button">{cooldown > 0 ? `Retry in ${cooldown}s` : "Try again"}</button></div>}
 
       <div aria-live="polite" aria-atomic="true">
       {result && (

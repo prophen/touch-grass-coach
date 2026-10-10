@@ -1,25 +1,39 @@
 import { BASE_RULES, tierForHours } from "@/lib/tiers";
 import { parsePreferences, preferenceInstructions, type MissionPreferences } from "@/lib/preferences";
+import { RequestLimiter, readSmallJson } from "@/lib/request-limit";
+import { parseCoachResponse } from "@/lib/coach-response";
+
+export const maxDuration = 30;
+const limiter = new RequestLimiter();
 
 const MODELS = ["gemma-4-26b-a4b-it", "gemma-4-31b-it"];
 const MODEL_TIMEOUT_MS = 12_000;
 
 export async function POST(req: Request) {
+  const origin = req.headers.get("origin");
+  if (origin && origin !== new URL(req.url).origin) return Response.json({ error: "Please request a mission from this app." }, { status: 403 });
+  // Vercel overwrites x-forwarded-for. Other hosts share a local bucket until configured at the edge.
+  const client = process.env.VERCEL ? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown" : "local";
+  const retryAfter = limiter.check(client);
+  if (retryAfter) return Response.json({ error: "The garden needs a breather. Please wait before requesting another mission.", retryAfter }, { status: 429, headers: { "Retry-After": String(retryAfter), "Cache-Control": "no-store" } });
   let hours: number;
   let preferences: MissionPreferences;
   try {
-    const body = await req.json();
+    const body = await readSmallJson(req) as { hours?: unknown; preferences?: unknown };
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("bad body");
+    if (typeof body.hours !== "number") throw new Error("bad hours");
     hours = body.hours;
     if (typeof hours !== "number") throw new Error("bad hours");
     if (!Number.isFinite(hours) || hours < 0 || hours > 24) throw new Error("bad hours");
     preferences = parsePreferences(body.preferences);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "Body too large") return Response.json({ error: "That request is too large. Please use the mission controls." }, { status: 413 });
     return Response.json({ error: "Send hours from 0–24 and preferences with minutes (5, 10, or 15), movement (walk or nearby), and tone (gentle or spicy)." }, { status: 400 });
   }
 
   const apiKey = process.env.GOOGLE_AI_STUDIO_KEY;
   if (!apiKey) {
-    return Response.json({ error: "Missing GOOGLE_AI_STUDIO_KEY. Copy .env.example to .env and add your free AI Studio key." }, { status: 500 });
+    return Response.json({ error: "The coach isn't configured yet. Please try again later." }, { status: 503 });
   }
 
   const tier = tierForHours(hours);
@@ -93,31 +107,18 @@ export async function POST(req: Request) {
 
   if (!upstream.ok) {
     console.error(`Gemma returned ${upstream.status}`);
+    if (upstream.status === 429) return Response.json({ error: "The coach is busy. Please try again in a minute.", retryAfter: 60 }, { status: 429, headers: { "Retry-After": "60" } });
     return Response.json(
-      { error: "Model call failed. Please try again." },
+      { error: "The coach couldn't answer just now. Please try again." },
       { status: 502 }
     );
   }
 
-  const parts: Array<{ text?: string; thought?: boolean }> = data?.candidates?.[0]?.content?.parts ?? [];
-  // Thinking models may split the final answer across several non-thinking parts.
-  const raw = parts
-    .filter((part) => !part.thought && typeof part.text === "string")
-    .map((part) => part.text)
-    .join("");
-  if (!raw) {
-    return Response.json({ error: "Empty model response." }, { status: 502 });
-  }
-
   let parsed: { roast: string; mission: string };
   try {
-    const json = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw;
-    parsed = JSON.parse(json);
-    if (typeof parsed.roast !== "string" || typeof parsed.mission !== "string") {
-      throw new Error("Missing expected fields");
-    }
+    parsed = parseCoachResponse(data);
   } catch {
-    return Response.json({ error: "Model returned non-JSON.", raw: raw.slice(0, 300) }, { status: 502 });
+    return Response.json({ error: "The coach lost its train of thought. Please try again." }, { status: 502 });
   }
 
   return Response.json({

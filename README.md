@@ -2,6 +2,8 @@
 
 Log your screen time. Get roasted by an open-weight model. Go outside.
 
+Public demo: [touch-grass-coach.vercel.app](https://touch-grass-coach.vercel.app).
+
 Built for Hacktoberfest Week 1 (2026): theme "Touch Grass", open-weight models at the core. The coach is **Gemma** (`gemma-4-26b-a4b-it`) running on Google's free AI Studio tier, with `gemma-4-31b-it` as a fallback. No downloads, no GPU, no disk space needed.
 
 ## How it works
@@ -43,6 +45,10 @@ Open http://localhost:3000.
 ## Deploy
 
 Any Next.js host works. Set `GOOGLE_AI_STUDIO_KEY` in the host's env vars. Vercel is the one-click path.
+
+The API caps request bodies at 4 KiB, rejects cross-origin browser requests, validates generated answers, and applies a bounded in-process six-request/minute limiter. On Vercel, configure a distributed Firewall rate-limit rule matching POST `/api/coach`, limited by IP to six requests per 60 seconds; the in-process limiter is only supplemental and resets with server instances. The client respects 429 cooldowns, times out after 30 seconds, offers explicit retries, and preserves a previous usable answer on failure. No model output or API credentials are included in error responses.
+
+Run all checks with `node --experimental-strip-types --test tests/*.test.mjs` (Node 22.6+), then `npm run build`.
 
 ## Write-up angles (for the DEV post)
 
