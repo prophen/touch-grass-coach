@@ -162,8 +162,10 @@ export default function Home() {
     <main className="page">
       <header className="hero">
         <p className="kicker">An open-weight intervention</p>
-        <h1>
-          Touch Grass <span className="coach">Coach</span>
+        <h1 className="garden-wordmark sticker-wordmark">
+          <span className="wordmark-touch">Touch</span>{" "}
+          <span className="wordmark-grass">Grass</span>{" "}
+          <span className="coach">Coach</span>
         </h1>
         <p className="sub">
           Log your screen time. Get roasted by Gemma. Then go outside and prove it wrong.
