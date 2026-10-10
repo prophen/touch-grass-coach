@@ -1,5 +1,6 @@
 import type { TierId } from "./tiers";
 import type { MissionPreferences } from "./preferences";
+import { normalizeHistory, HISTORY_LIMIT, type MissionMemory } from "./mission-history.ts";
 
 export interface CoachResult {
   tier: TierId;
@@ -61,6 +62,7 @@ export interface SavedMission {
   status: "active" | "completed" | "abandoned";
   result: CoachResult;
   progress: Progress;
+  history?: MissionMemory[];
 }
 export const MISSION_KEY = "tgc-mission";
 type Store = Pick<Storage, "getItem" | "setItem">;
@@ -79,14 +81,17 @@ export function readMission(store: Store): SavedMission | null {
       ![r?.label, r?.emoji, r?.roast, r?.mission].every(text => typeof text === "string" && text.trim()) ||
       ![5, 10, 15].includes(p?.minutes) || !["walk", "nearby"].includes(p?.movement) || !["gentle", "spicy"].includes(p?.tone) ||
       !Number.isSafeInteger(value.progress?.count) || value.progress.count < 0 || typeof value.progress.last !== "string") return null;
-    return { ...value, progress: normalizeProgress(value.progress) } as SavedMission;
+    const history = value.history === undefined && value.status === "completed" && value.progress.last
+      ? normalizeHistory([{ id: value.id, mission: r.mission, completedOn: value.progress.last }])
+      : normalizeHistory(value.history);
+    return { ...value, progress: normalizeProgress(value.progress), history } as SavedMission;
   } catch { return null; }
 }
 
 export function startMission(store: Store, result: CoachResult, progress: Progress): SavedMission {
   const existing = readMission(store);
   if (existing?.status === "active") return existing;
-  const saved: SavedMission = { version: 1, id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active", result, progress: existing?.progress ?? normalizeProgress(progress) };
+  const saved: SavedMission = { version: 1, id: crypto.randomUUID(), startedAt: new Date().toISOString(), status: "active", result, progress: existing?.progress ?? normalizeProgress(progress), history: existing?.history ?? [] };
   store.setItem(MISSION_KEY, JSON.stringify(saved));
   return saved;
 }
@@ -98,7 +103,19 @@ export function finishMission(store: Store, id: string, status: "completed" | "a
   const progress = status === "completed"
     ? creditMission(current.progress, now)
     : current.progress;
-  const saved = { ...current, status, progress };
+  const history = status === "completed"
+    ? [...(current.history ?? []).filter(entry => entry.id !== current.id), { id: current.id, mission: current.result.mission.slice(0, 1000), completedOn: localDay(now) }].slice(-HISTORY_LIMIT)
+    : current.history ?? [];
+  const saved = { ...current, status, progress, history };
+  store.setItem(MISSION_KEY, JSON.stringify(saved));
+  return saved;
+}
+
+/** Clear only coaching memory; keep the active mission and earned progress intact. */
+export function clearMissionHistory(store: Store): SavedMission | null {
+  const current = readMission(store);
+  if (!current) return null;
+  const saved = { ...current, history: [] };
   store.setItem(MISSION_KEY, JSON.stringify(saved));
   return saved;
 }
