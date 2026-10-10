@@ -5,6 +5,7 @@ import { TIERS, tierForHours } from "@/lib/tiers";
 import { GardenMascot, MASCOT_NAMES } from "@/app/components/GardenMascot";
 import { DEFAULT_PREFERENCES, type MissionPreferences } from "@/lib/preferences";
 import { GrowingGarden } from "@/app/components/GrowingGarden";
+import { playGardenSound } from "@/lib/garden-sound";
 
 import { MISSION_KEY, EMPTY_PROGRESS, localDay, currentStreak, normalizeProgress, readMission, startMission, finishMission, type Progress, type CoachResult, type SavedMission } from "@/lib/mission";
 
@@ -25,6 +26,23 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [celebration, setCelebration] = useState<string | null>(null);
   const missionHeading = useRef<HTMLHeadingElement>(null);
+  const [sound, setSound] = useState(false);
+  const soundEnabled = useRef(false);
+  const [farewell, setFarewell] = useState(false);
+  const [answerNumber, setAnswerNumber] = useState(0);
+  useEffect(() => { try { soundEnabled.current = localStorage.getItem("tgc-sound") === "on"; setSound(soundEnabled.current); } catch {} }, []);
+  useEffect(() => {
+    if (!farewell) return;
+    const timer = window.setTimeout(() => setFarewell(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [farewell]);
+  function toggleSound() {
+    const enabled = !sound;
+    setSound(enabled);
+    soundEnabled.current = enabled;
+    try { localStorage.setItem("tgc-sound", enabled ? "on" : "off"); } catch {}
+    if (enabled) void playGardenSound("bubble");
+  }
 
   useEffect(() => {
     function restore() {
@@ -102,6 +120,8 @@ export default function Home() {
       }
       if (!res.ok) throw new Error(data.error ?? "Coach is unavailable.");
       setResult(data);
+      setAnswerNumber(value => value + 1);
+      if (soundEnabled.current) void playGardenSound("bubble");
     } catch (e) {
       setError(controller.signal.aborted ? "The coach took too long. Please try again." : e instanceof TypeError ? "Couldn't reach the coach. Check your connection and try again." : e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -114,6 +134,8 @@ export default function Home() {
     if (!result) return;
     try {
       setSavedMission(startMission(localStorage, result, progress));
+      setFarewell(true);
+      if (sound) void playGardenSound("goodbye");
       setCelebration(null);
       setError(null);
     } catch {
@@ -126,7 +148,10 @@ export default function Home() {
     try {
       const before = readMission(localStorage);
       const saved = finishMission(localStorage, savedMission.id, status);
-      if (before?.id === savedMission.id && before.status === "active" && saved?.status === "completed" && status === "completed") setCelebration(saved.id);
+      if (before?.id === savedMission.id && before.status === "active" && saved?.status === "completed" && status === "completed") {
+        setCelebration(saved.id);
+        if (sound) void playGardenSound("plant");
+      }
       setSavedMission(saved);
       if (saved) {
         setProgress(saved.progress);
@@ -145,7 +170,8 @@ export default function Home() {
     <main className="page outside-page">
       <p className="kicker">Your outdoor mission</p>
       <h1 ref={missionHeading} tabIndex={-1}>Pocket your phone.<br />Go find a little green.</h1>
-      <GardenMascot tier={savedMission.result.tier} size={160} paused />
+      <div className={farewell ? "mascot-goodbye" : undefined}><GardenMascot tier={savedMission.result.tier} size={160} paused /></div>
+      <p className="garden-greeting">{farewell ? "Go on. I’ll wait." : "Your mission’s still waiting. Your garden is rooting for you."}</p>
       <section className="card active-mission" aria-label="Active mission">
         <p className="mission-label">{savedMission.result.preferences.minutes} minutes max · {savedMission.result.preferences.movement === "nearby" ? "Stay nearby" : "Take a walk"}</p>
         <p className="active-mission__text">{savedMission.result.mission}</p>
@@ -171,13 +197,15 @@ export default function Home() {
           Log your screen time. Get roasted by Gemma. Then go outside and prove it wrong.
         </p>
       </header>
+      <button className="sound-toggle" aria-pressed={sound} onClick={toggleSound}>Garden sounds: {sound ? "on" : "off"}</button>
+      <p className="garden-greeting">{progress.totalMissions > 0 ? "Back for more photosynthesis? Your garden missed you." : "A little fresh air. A little chaos. Let’s grow something."}</p>
 
       {savedMission?.status === "completed" && <p className="mission-outcome" role="status">Grass touched. Welcome back!{touchedToday ? " Today's progress is saved." : " Ready for a new day?"}</p>}
       {celebration && savedMission?.status === "completed" && <div className="garden-celebration" role="status"><div className="garden-celebration__mascot"><GardenMascot tier={savedMission.result.tier} size={100} paused /></div><p><strong>A new plant just moved in!</strong><br />{MASCOT_NAMES[savedMission.result.tier]} is rooting for you.</p></div>}
       {savedMission?.status === "abandoned" && <p className="mission-outcome" role="status">Mission set aside. Pick something that fits your day.</p>}
 
       <section className="card">
-        <div style={{ textAlign: "center" }}><GardenMascot tier={preview.id} /></div>
+        <div className="mascot-slider" style={{ transform: `rotate(${(hours - 12) / 4}deg)` }}><div key={preview.id} className="mascot-reaction"><GardenMascot tier={preview.id} /></div></div>
         <label htmlFor="hours" className="label">
           Screen time today: <strong>{hours}h</strong>
         </label>
@@ -217,7 +245,7 @@ export default function Home() {
           <p>Stay nearby keeps your mission in one outdoor spot. Gentle keeps the coach kind and encouraging.</p>
         </fieldset>
         <button onClick={coachMe} disabled={loading || cooldown > 0} className="cta">
-          {loading ? "Consulting the gremlin..." : cooldown > 0 ? `Try again in ${cooldown}s` : "Coach me"}
+          {loading ? "Growing your next mission…" : cooldown > 0 ? `Try again in ${cooldown}s` : "Coach me"}
         </button>
         {loading && <p role="status" className="request-status">Finding a mission that fits your day…</p>}
       </section>
@@ -226,9 +254,9 @@ export default function Home() {
 
       <div aria-live="polite" aria-atomic="true">
       {result && (
-        <section className="card result">
+        <section key={answerNumber} className="card result answer-arrival">
           <div className="coach-conversation">
-            <div className="coach-speaker"><GardenMascot tier={result.tier} size={130} /></div>
+            <div key={answerNumber} className="coach-speaker mascot-reaction"><GardenMascot tier={result.tier} size={130} /></div>
             <div className="speech-bubble">
               <p className="result-tier">{MASCOT_NAMES[result.tier]} · {result.label} coach</p>
               <blockquote className="roast">{result.roast}</blockquote>
@@ -253,7 +281,7 @@ export default function Home() {
         {progress.legacyDays > 0 && <p className="progress-note">{progress.legacyDays} earlier outdoor {progress.legacyDays === 1 ? "day" : "days"} preserved. Mission totals start with this update; earlier consecutive days weren't recorded.</p>}
       </section>
 
-      <GrowingGarden total={progress.totalMissions} celebrating={Boolean(celebration)} />
+      <GrowingGarden total={progress.totalMissions} celebrating={Boolean(celebration)} latestDate={progress.last} />
 
       <footer className="tiers">
         {TIERS.map((t) => (

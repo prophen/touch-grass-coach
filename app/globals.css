@@ -305,3 +305,20 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   font-size: 0.9rem;
 }
 
+
+.sound-toggle { display: block; margin: 0 auto .6rem; min-height: 44px; padding: .5rem .9rem; border: 1px solid var(--grass); border-radius: 24px; background: var(--paper); color: var(--grass-deep); font: inherit; font-size: .85rem; cursor: pointer; }
+.sound-toggle[aria-pressed="true"] { background: var(--grass-light); }
+.garden-greeting { text-align: center; font-size: .9rem; color: #4a5d4f; line-height: 1.5; margin: 0 0 1.2rem; }
+.mascot-slider { text-align: center; transition: transform .18s ease-out; }
+.mascot-reaction { animation: mascot-hello .45s ease-out; }
+.mascot-goodbye { animation: mascot-wave .75s ease-in-out; }
+.answer-arrival { animation: bubble-arrival .25s ease-out; }
+.plant-button { display: block; width: 100%; min-height: 44px; padding: 0; border: 2px solid transparent; border-radius: 12px; background: transparent; cursor: pointer; transition: transform .15s ease-out; }
+.plant-button:hover { transform: translateY(-4px); }
+.plant-button[aria-pressed="true"] { border-color: var(--grass); background: #fefee3; }
+.plant-story { border: 1px solid var(--grass); border-radius: 12px; padding: .8rem; background: var(--paper); font-size: .9rem; margin: .75rem 0; }
+.plant-story p { margin: .4rem 0 0; }
+@keyframes mascot-hello { 0% { transform: scale(.94) rotate(-5deg); } 55% { transform: scale(1.04) rotate(4deg); } 100% { transform: none; } }
+@keyframes mascot-wave { 20%,60% { transform: rotate(9deg); } 40%,80% { transform: rotate(-9deg); } }
+@keyframes bubble-arrival { from { transform: translateY(6px) scale(.98); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mascot-reaction, .mascot-goodbye, .answer-arrival { animation: none; } .mascot-slider { transform: none !important; transition: none; } .plant-button { transition: none; } .plant-button:hover { transform: none; } }
