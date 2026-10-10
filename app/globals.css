@@ -324,7 +324,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (prefers-reduced-motion: reduce) { .mascot-reaction, .mascot-goodbye, .answer-arrival { animation: none; } .mascot-slider { transform: none !important; transition: none; } .plant-button { transition: none; } .plant-button:hover { transform: none; } }
 
 .coach-memory { margin: 0 0 1.3rem; padding: 1rem; border: 1px solid #9ab79e; border-radius: 12px; background: #fefee3; font-size: .85rem; line-height: 1.5; }
-.coach-memory h2 { font-size: 1rem; margin: 0; }
+.coach-memory > summary { font-size: 1rem; font-weight: 700; }
 .coach-memory p { margin: .5rem 0; }
 .coach-memory summary { cursor: pointer; min-height: 44px; padding: .65rem 0; }
 .coach-memory summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
