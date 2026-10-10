@@ -24,6 +24,11 @@ Mission preferences are validated by the server and included in Gemma's instruct
 Preference checks: `node --experimental-strip-types --test tests/preferences.test.mjs` (Node 22.6+).
 Mission persistence checks: `node --experimental-strip-types --test tests/mission.test.mjs`.
 Garden checks: `node --experimental-strip-types --test tests/garden.test.mjs`.
+History checks: `node --experimental-strip-types --test tests/history.test.mjs`.
+
+The coach remembers up to ten completed mission texts and dates locally, stored atomically with the saved mission and progress. Generation sends only the most recent three mission texts (up to 300 characters each), screen hours, and preferences to Google to help Gemma avoid repeats; dates, IDs, streaks, and garden totals stay on the device. History is presented as untrusted JSON data, never as model instructions, and validated on the server. Variety is prompted, not guaranteed. Existing saved completed missions seed only the one known last mission; older tasks cannot be reconstructed.
+
+“Clear coaching history” removes this context without resetting plants, streaks, or the current mission. Clearing persists across reload and repeat completion cannot resurrect cleared history. New completions start building fresh memory. Text already sent to Google cannot be recalled. Clearing browser data removes all local progress and history. History storage failure cannot partially credit a completion.
 
 Your garden earns one illustrated plant per recorded completed mission, cycling through daisies, sprouts, wildflowers, and grass tufts. Rewards derive from the saved mission total, so repeat completion cannot add duplicate plants and no separate reward ledger is required. Existing recorded missions get plants automatically. The newest 12 plants are displayed, with the full count retained. Plants survive missed days and reloads; a brief mascot celebration plays only for a fresh completion and respects reduced-motion settings. Clearing browser data clears the garden too.
 
