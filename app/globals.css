@@ -38,14 +38,69 @@ body {
   margin: 0 0 0.5rem;
 }
 
-.hero h1 {
-  font-size: 2.5rem;
-  margin: 0 0 0.5rem;
-  line-height: 1.1;
+.hero .garden-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.1rem 0 1.5rem;
+  color: var(--grass-deep);
+  line-height: 1;
 }
 
-.hero h1 .coach {
-  color: var(--grass);
+.wordmark-touch {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  font-style: italic;
+  font-weight: 400;
+  transform: rotate(-5deg);
+  margin: 0 0 -.2rem -6rem;
+}
+
+.wordmark-grass {
+  position: relative;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(4.3rem, 18vw, 6.25rem);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -.065em;
+  padding: 0 .25em .08em .08em;
+  text-shadow: 2px 3px 0 #b2d987;
+}
+
+.wordmark-grass::after {
+  content: "";
+  position: absolute;
+  bottom: .01em;
+  left: 10%;
+  width: 76%;
+  height: .09em;
+  border-bottom: 3px solid var(--grass);
+  border-radius: 50%;
+  transform: rotate(-3deg);
+}
+
+.wordmark-sprig {
+  position: absolute;
+  width: .43em;
+  height: .53em;
+  right: -.12em;
+  top: -.16em;
+  transform: rotate(12deg);
+}
+
+.garden-wordmark .coach {
+  margin: .35rem 0 0 7rem;
+  padding: .4rem .85rem .45rem;
+  background: var(--accent);
+  border: 2px solid var(--grass-deep);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--grass-deep);
+  color: var(--grass-deep);
+  font-size: .95rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  transform: rotate(-6deg);
 }
 
 .sub {

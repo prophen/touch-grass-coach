@@ -162,8 +162,16 @@ export default function Home() {
     <main className="page">
       <header className="hero">
         <p className="kicker">An open-weight intervention</p>
-        <h1>
-          Touch Grass <span className="coach">Coach</span>
+        <h1 className="garden-wordmark">
+          <span className="wordmark-touch">Touch</span>{" "}
+          <span className="wordmark-grass">Grass
+            <svg className="wordmark-sprig" viewBox="0 0 46 56" fill="none" aria-hidden="true">
+              <path d="M23 53C24 38 24 24 27 11" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              <path d="M25 30C10 32 3 23 4 13C18 12 25 18 25 30Z" fill="#8abb64" stroke="currentColor" strokeWidth="2.5" />
+              <path d="M26 19C26 7 34 2 43 3C44 14 37 22 26 19Z" fill="#b2d987" stroke="currentColor" strokeWidth="2.5" />
+            </svg>
+          </span>{" "}
+          <span className="coach">Coach</span>
         </h1>
         <p className="sub">
           Log your screen time. Get roasted by Gemma. Then go outside and prove it wrong.
