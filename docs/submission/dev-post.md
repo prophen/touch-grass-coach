@@ -20,7 +20,9 @@ There is no account, leaderboard, or endless feed. The reward is something small
 
 [Try Touch Grass Coach](https://touch-grass-coach.vercel.app).
 
-[See the captured walkthrough](https://github.com/prophen/touch-grass-coach/blob/main/docs/demo/README.md): choose preferences, get a mission, leave the app, return, and inspect your new plant. The completion shown in the walkthrough is a UI demonstration, not evidence of an outdoor trial.
+[Watch the 60-second demo](https://youtu.be/aPkAPw76DIw).
+
+Mission completion in the video uses a demo time jump; it demonstrates the UI rather than an outdoor trial.
 
 ## Code
 
