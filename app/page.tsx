@@ -213,7 +213,6 @@ export default function Home() {
       </header>
       <button className="sound-toggle" aria-pressed={sound} onClick={toggleSound}>Garden sounds: {sound ? "on" : "off"}</button>
       <p className="garden-greeting">{progress.totalMissions > 0 ? "Back for more photosynthesis? Your garden missed you." : "A little fresh air. A little chaos. Let’s grow something."}</p>
-      <CoachMemory history={history} onClear={clearHistory} disabled={loading} notice={memoryNotice} />
 
       {savedMission?.status === "completed" && <p className="mission-outcome" role="status">Grass touched. Welcome back!{touchedToday ? " Today's progress is saved." : " Ready for a new day?"}</p>}
       {celebration && savedMission?.status === "completed" && <div className="garden-celebration" role="status"><div className="garden-celebration__mascot"><GardenMascot tier={savedMission.result.tier} size={100} paused /></div><p><strong>A new plant just moved in!</strong><br />{MASCOT_NAMES[savedMission.result.tier]} is rooting for you.</p></div>}
@@ -296,6 +295,7 @@ export default function Home() {
         {progress.legacyDays > 0 && <p className="progress-note">{progress.legacyDays} earlier outdoor {progress.legacyDays === 1 ? "day" : "days"} preserved. Mission totals start with this update; earlier consecutive days weren't recorded.</p>}
       </section>
 
+      <CoachMemory history={history} onClear={clearHistory} disabled={loading} notice={memoryNotice} />
       <GrowingGarden total={progress.totalMissions} celebrating={Boolean(celebration)} latestDate={progress.last} />
 
       <footer className="tiers">
